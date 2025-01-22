@@ -9,7 +9,10 @@ void main() {
         primarySwatch: Colors.blue,
       ),
       debugShowCheckedModeBanner: false,
-      home: const HomePage(),
+      home: ApiProvider(
+        api: Api(),
+        child: const HomePage(),
+      ),
     ),
   );
 }
@@ -28,6 +31,10 @@ class ApiProvider extends InheritedWidget {
   bool updateShouldNotify(covariant ApiProvider oldWidget) {
     return uuid != oldWidget.uuid;
   }
+
+  static ApiProvider of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<ApiProvider>()!;
+  }
 }
 
 class HomePage extends StatefulWidget {
@@ -38,25 +45,40 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String title = "Tap the screen";
+  ValueKey _textKey = const ValueKey<String?>(null);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: Text(ApiProvider.of(context).api.dateAndTime ?? ''),
         backgroundColor: Theme.of(context).primaryColor,
       ),
       body: GestureDetector(
-        onTap: () {
+        onTap: () async {
+          final api = ApiProvider.of(context).api;
+          final dateAndTime = await api.getDateAndTime();
           setState(() {
-            title = DateTime.now().toString();
+            _textKey = ValueKey(dateAndTime);
           });
         },
-        child: Container(
-          color: Colors.white,
+        child: SizedBox.expand(
+          child: Container(
+              color: Colors.white, child: DateTimeWidget(key: _textKey)),
         ),
       ),
+    );
+  }
+}
+
+class DateTimeWidget extends StatelessWidget {
+  const DateTimeWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final api = ApiProvider.of(context).api;
+    return Text(
+      api.dateAndTime ?? 'Tap on screen to fetch date and time',
     );
   }
 }
